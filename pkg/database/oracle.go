@@ -1,8 +1,8 @@
 package database
 
 import (
+	"context"
 	"database/sql"
-	"fmt"
 	"log"
 
 	go_ora "github.com/sijms/go-ora/v2"
@@ -14,10 +14,10 @@ type Config struct {
 	Password string
 }
 
-func Konek(cfg Config) (*sql.DB, error) {
+func Konek(ctx context.Context, cfg Config) (*sql.DB, error) {
 	connStr := cfg.SID
 	databaseUrl := go_ora.BuildJDBC(cfg.Username, cfg.Password, connStr, map[string]string{})
-	fmt.Println(databaseUrl)
+	// fmt.Println(databaseUrl)
 	db, err := sql.Open("oracle", databaseUrl)
 
 	if err != nil {
