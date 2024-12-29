@@ -1,0 +1,10 @@
+whatsapp:
+  session: "your_whatsapp_session"
+
+telegram:
+  token: "your_telegram_bot_token"
+
+database:
+  user: "your_db_user"
+  password: "your_db_password"
+  sid: "your_db_sid"
