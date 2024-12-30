@@ -36,6 +36,12 @@ func main() {
 	}
 	defer db.Close()
 
+	// redis
+	rdb, err := database.Redis(appContext, database.ConfigRedis(cfg.Redis))
+	if err != nil {
+		log.Fatalf("Error connecting to database: %v", err)
+	}
+
 	// Create a channel to listen for interrupt signals
 	interruptChan := make(chan os.Signal, 1)
 	signal.Notify(interruptChan, syscall.SIGINT, syscall.SIGTERM)
@@ -72,7 +78,7 @@ func main() {
 	// wa
 	// Start WhatsApp bot
 	go func() {
-		if err := wa.Mulai(appContext, db, teleGo, clientWA); err != nil {
+		if err := wa.Mulai(appContext, db, teleGo, clientWA, rdb); err != nil {
 			log.Fatalf("WhatsApp bot failed: %v", err)
 		}
 	}()

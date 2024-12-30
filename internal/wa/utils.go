@@ -6,6 +6,18 @@ import (
 	"go.mau.fi/whatsmeow/types"
 )
 
+func getNomorHP(arg string) (phoneNumber string) {
+	if strings.Contains(string(arg), ":") {
+		parts := strings.Split(arg, "@")
+		phoneParts := strings.Split(parts[0], ":")
+		phoneNumber = phoneParts[0]
+	} else {
+		parts := strings.Split(arg, "@")
+		phoneNumber = parts[0]
+	}
+	return
+}
+
 func parseJID(arg string) (types.JID, bool) {
 	if arg[0] == '+' {
 		arg = arg[1:]

@@ -14,6 +14,10 @@ type TelegramConfig struct {
 	Token string `yaml:"token"`
 }
 
+type RedisConfig struct {
+	Host string `yaml:"host"`
+}
+
 type DatabaseConfig struct {
 	SID      string `yaml:"sid"`
 	Username string `yaml:"user"`
@@ -24,6 +28,7 @@ type Config struct {
 	WhatsApp WhatsAppConfig `yaml:"whatsapp"`
 	Telegram TelegramConfig `yaml:"telegram"`
 	Database DatabaseConfig `yaml:"database"`
+	Redis    RedisConfig    `yaml:"redis"`
 }
 
 // LoadConfig loads the configuration from a YAML file

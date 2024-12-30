@@ -11,12 +11,13 @@ import (
 	"github.com/go-telegram/bot"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mdp/qrterminal"
+	"github.com/redis/go-redis/v9"
 	"go.mau.fi/whatsmeow"
 )
 
-func Mulai(ctx context.Context, db *sql.DB, teleGo *bot.Bot, client *whatsmeow.Client) error {
+func Mulai(ctx context.Context, db *sql.DB, teleGo *bot.Bot, client *whatsmeow.Client, rdb *redis.Client) error {
 	fmt.Println("ini wa")
-	client.AddEventHandler(GetEventHandler(ctx, client, teleGo))
+	client.AddEventHandler(GetEventHandler(ctx, client, teleGo, db, rdb))
 
 	if client.Store.ID == nil {
 		// No ID stored, new login
