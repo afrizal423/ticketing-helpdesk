@@ -69,8 +69,10 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 							Conversation: proto.String(resp),
 						})
 					} else {
+						nama, lokasi := GetIdentitasCLient(db, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
 						resp = ""
-						resp += "*Hai nama*, Selamat datang di Helpdesk ICT.\n"
+						resp += fmt.Sprintf("*Hai %s dari toko %s*, Selamat datang di Helpdesk ICT.\n", nama, lokasi)
+						// resp += "*Hai nama*, Selamat datang di Helpdesk ICT.\n"
 						resp += "Silahkan ketik perintah !buattiket untuk membuat tiket"
 						client.SendMessage(context.Background(), dariOrang, &waProto.Message{
 							Conversation: proto.String(resp),
@@ -79,27 +81,37 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 				}
 
 				if strings.Contains(pesan, "!register") || strings.Contains(pesan, "!daftar") {
-					daftarAwalClient(ctx, client, teleGo, db, dariOrang, rdb)
-					setDaftarNama(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
-					pesan = ""
-				}
-
-				if CekPosisiDaftarNama(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, ""))) {
-					if len(pesan) > 2 {
-						simpanDaftarNama(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")), pesan)
-						daftarAwalClientLokasi(ctx, client, teleGo, db, dariOrang, rdb)
-						setLokasiAsal(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
+					cek := cekSudahDaftar(db, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
+					if cek > 0 {
+						client.SendMessage(context.Background(), dariOrang, &waProto.Message{
+							Conversation: proto.String("*Mohon maaf* anda sudah terdaftar disistem kami.\nSilahkan ketik perintah !buattiket untuk membuat tiket."),
+						})
+					} else {
+						daftarAwalClient(ctx, client, teleGo, db, dariOrang, rdb)
+						setDaftarNama(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
 						pesan = ""
 					}
-				}
+				} else {
+					// else ini mengecek pesan bukan dair perintah
+					// pengecekkan bisa waktu daftar maupun ngecek mana masuk chat ticket yang aktif
 
-				if CekPosisiLokasiAsal(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, ""))) {
-					// fmt.Println(pesan)
-					if len(pesan) > 2 {
-						simpanLokasiAsal(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")), pesan)
-						akhiriDaftar(ctx, client, teleGo, db, dariOrang, rdb)
-						hapusStateDaftar(db, ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
-						pesan = ""
+					if CekPosisiDaftarNama(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, ""))) {
+						if len(pesan) > 2 {
+							simpanDaftarNama(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")), pesan)
+							daftarAwalClientLokasi(ctx, client, teleGo, db, dariOrang, rdb)
+							setLokasiAsal(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
+							pesan = ""
+						}
+					}
+
+					if CekPosisiLokasiAsal(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, ""))) {
+						// fmt.Println(pesan)
+						if len(pesan) > 2 {
+							simpanLokasiAsal(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")), pesan)
+							akhiriDaftar(ctx, client, teleGo, db, dariOrang, rdb)
+							hapusStateDaftar(db, ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
+							pesan = ""
+						}
 					}
 				}
 

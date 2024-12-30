@@ -5,3 +5,8 @@ type SimpanDataClient struct {
 	Nama   string
 	Lokasi string
 }
+
+type DataClient struct {
+	Nama   string
+	Lokasi string
+}

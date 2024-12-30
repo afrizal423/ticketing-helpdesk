@@ -17,6 +17,16 @@ func cekSudahDaftar(db *sql.DB, nowa string) int {
 	return jum
 }
 
+func GetIdentitasCLient(db *sql.DB, nowa string) (nama string, lokasi string) {
+	data, err := query.GetNamaClient(db, nowa)
+	if err != nil {
+		fmt.Println("Error setting value:", err)
+	}
+	nama = data.Nama
+	lokasi = data.Lokasi
+	return
+}
+
 func simpanDaftarNama(ctx context.Context, rdb *redis.Client, nowa string, isi string) {
 	err := rdb.Set(ctx, nowa+"_nama", isi, 5*time.Minute).Err()
 	if err != nil {
