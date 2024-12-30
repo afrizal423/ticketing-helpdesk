@@ -5,6 +5,20 @@ telegram:
   token: "your_telegram_bot_token"
 
 database:
-  user: "your_db_user"
-  password: "your_db_password"
-  sid: "your_db_sid"
+  sid: "(DESCRIPTION=
+    (ADDRESS_LIST=
+    	(LOAD_BALANCE=OFF)
+        (FAILOVER=ON)
+    	(address=(protocol=tcp)(host=172.XXXXXXXXX)(port=1521))
+    )
+    (CONNECT_DATA=
+    	(SERVICE_NAME=XXXXXX)
+        (SERVER=DEDICATED)
+    )
+    (SOURCE_ROUTE=yes)
+    )"
+  user: "XXXXXX"
+  password: "XXXXXX"
+
+redis:
+  host: "localhost:6379"
