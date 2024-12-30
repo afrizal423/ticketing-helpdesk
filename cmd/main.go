@@ -6,15 +6,16 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
+	"github.com/afrizal423/ticketing-helpdesk/internal/tele"
 	"github.com/afrizal423/ticketing-helpdesk/internal/wa"
 	"github.com/afrizal423/ticketing-helpdesk/pkg/config"
 	"github.com/afrizal423/ticketing-helpdesk/pkg/database"
+	"github.com/go-telegram/bot"
 )
 
 func main() {
-	appContext, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	appContext, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer func() {
 		cancel()
 	}()
@@ -36,14 +37,32 @@ func main() {
 	interruptChan := make(chan os.Signal, 1)
 	signal.Notify(interruptChan, syscall.SIGINT, syscall.SIGTERM)
 
+	// init tele
+	opts := []bot.Option{
+		bot.WithDefaultHandler(tele.DefaultHandler),
+	}
+	teleGo, err := bot.New(cfg.Telegram.Token, opts...)
+	if nil != err {
+		// panics for the sake of simplicity.
+		// you should handle this error properly in your code.
+		panic(err)
+	}
+
 	// wa
 	// Start WhatsApp bot
 	go func() {
-		if err := wa.Mulai(appContext, db); err != nil {
+		if err := wa.Mulai(appContext, db, teleGo); err != nil {
 			log.Fatalf("WhatsApp bot failed: %v", err)
 		}
 	}()
 
+	//tele
+	// Start Telegram bot
+	go func() {
+		if err := tele.Mulai(appContext, db, teleGo); err != nil {
+			log.Fatalf("Telegram bot failed: %v", err)
+		}
+	}()
 	// Block main goroutine
 	// select {}
 	log.Println("Tekan Ctrl+C untuk exit...")

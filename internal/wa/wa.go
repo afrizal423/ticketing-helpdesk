@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/go-telegram/bot"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mdp/qrterminal"
 	"go.mau.fi/whatsmeow"
@@ -15,7 +16,7 @@ import (
 	waLog "go.mau.fi/whatsmeow/util/log"
 )
 
-func Mulai(ctx context.Context, db *sql.DB) error {
+func Mulai(ctx context.Context, db *sql.DB, teleGo *bot.Bot) error {
 	fmt.Println("ini wa")
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
 	container, err := sqlstore.New("sqlite3", "file:examplestore.db?_foreign_keys=on", dbLog)
@@ -30,7 +31,7 @@ func Mulai(ctx context.Context, db *sql.DB) error {
 	}
 	clientLog := waLog.Stdout("Client", "DEBUG", true)
 	client := whatsmeow.NewClient(deviceStore, clientLog)
-	client.AddEventHandler(GetEventHandler(client))
+	client.AddEventHandler(GetEventHandler(ctx, client, teleGo))
 
 	if client.Store.ID == nil {
 		// No ID stored, new login
