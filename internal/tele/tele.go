@@ -6,9 +6,14 @@ import (
 	"fmt"
 
 	"github.com/go-telegram/bot"
+	"go.mau.fi/whatsmeow"
 )
 
-func Mulai(ctx context.Context, db *sql.DB, b *bot.Bot) error {
+type InitTele struct {
+	ClientWA *whatsmeow.Client
+}
+
+func Mulai(ctx context.Context, db *sql.DB, b *bot.Bot, client *whatsmeow.Client) error {
 	fmt.Println("ini tele")
 	// ctx2, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	// defer cancel()

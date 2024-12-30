@@ -12,6 +12,9 @@ import (
 	"github.com/afrizal423/ticketing-helpdesk/pkg/config"
 	"github.com/afrizal423/ticketing-helpdesk/pkg/database"
 	"github.com/go-telegram/bot"
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/store/sqlstore"
+	waLog "go.mau.fi/whatsmeow/util/log"
 )
 
 func main() {
@@ -37,9 +40,27 @@ func main() {
 	interruptChan := make(chan os.Signal, 1)
 	signal.Notify(interruptChan, syscall.SIGINT, syscall.SIGTERM)
 
+	// init wa
+	dbLog := waLog.Stdout("Database", "DEBUG", true)
+	container, err := sqlstore.New("sqlite3", "file:examplestore.db?_foreign_keys=on", dbLog)
+	if err != nil {
+		panic(err)
+	}
+
+	// If you want multiple sessions, remember their JIDs and use .GetDevice(jid) or .GetAllDevices() instead.
+	deviceStore, err := container.GetFirstDevice()
+	if err != nil {
+		panic(err)
+	}
+	clientLog := waLog.Stdout("Client", "DEBUG", true)
+	clientWA := whatsmeow.NewClient(deviceStore, clientLog)
+
 	// init tele
+	telex := &tele.InitTele{
+		ClientWA: clientWA,
+	}
 	opts := []bot.Option{
-		bot.WithDefaultHandler(tele.DefaultHandler),
+		bot.WithDefaultHandler(telex.DefaultHandler),
 	}
 	teleGo, err := bot.New(cfg.Telegram.Token, opts...)
 	if nil != err {
@@ -51,7 +72,7 @@ func main() {
 	// wa
 	// Start WhatsApp bot
 	go func() {
-		if err := wa.Mulai(appContext, db, teleGo); err != nil {
+		if err := wa.Mulai(appContext, db, teleGo, clientWA); err != nil {
 			log.Fatalf("WhatsApp bot failed: %v", err)
 		}
 	}()
@@ -59,7 +80,7 @@ func main() {
 	//tele
 	// Start Telegram bot
 	go func() {
-		if err := tele.Mulai(appContext, db, teleGo); err != nil {
+		if err := tele.Mulai(appContext, db, teleGo, clientWA); err != nil {
 			log.Fatalf("Telegram bot failed: %v", err)
 		}
 	}()

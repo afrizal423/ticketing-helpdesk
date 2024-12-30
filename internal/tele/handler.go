@@ -32,13 +32,13 @@ func KirimdariWA(ctx context.Context, b *bot.Bot, pesan string) {
 	}
 }
 
-func DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+func (app *InitTele) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	// b.SendMessage(ctx, &bot.SendMessageParams{
 	// 	ChatID: update.Message.Chat.ID,
 	// 	Text:   "Say /hello",
 	// })
-	fmt.Println(update.Message.Text)
-	wa.KirimdariTeleHandler(ctx, b)
+	// fmt.Println(update.Message.Text)
+	wa.KirimdariTeleHandler(ctx, b, app.ClientWA, update.Message.Text)
 }
 
 func HelloHandler(ctx context.Context, b *bot.Bot, update *models.Update) {

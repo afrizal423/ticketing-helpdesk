@@ -12,13 +12,11 @@ import (
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/binary/proto"
 	"go.mau.fi/whatsmeow/types/events"
-	"google.golang.org/protobuf/proto"
 )
 
-func KirimdariTeleHandler(ctx context.Context, teleGo *bot.Bot) {
-	var client *whatsmeow.Client
+func KirimdariTeleHandler(ctx context.Context, teleGo *bot.Bot, client *whatsmeow.Client, msgTele string) {
 	aku, _ := parseJID("NOMORKU")
-	pesan := "dari tele"
+	pesan := msgTele
 	var pointerToPesan *string = &pesan
 
 	msg := &waProto.Message{
@@ -57,12 +55,12 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 
 				// telegramBot.SendMessage(ctx, )
 
-				aku, _ := parseJID("NOMORKU")
-				msg := &waProto.Message{
-					Conversation: proto.String(pesan),
-				}
+				// aku, _ := parseJID("NOMORKU")
+				// msg := &waProto.Message{
+				// 	Conversation: proto.String(pesan),
+				// }
 				// var pesan = "> ⓘ _This number was temporarily banned from WhatsApp for participating in a group of sad single men on Saturday nights. This WhatsApp was confiscated by the Republic of Indonesia Police Institution._"
-				client.SendMessage(context.Background(), aku, msg)
+				// client.SendMessage(context.Background(), aku, msg)
 
 				// if strings.Contains(v.Message.GetConversation(), "-ask") {
 				// 	gagal, jwban := Chat(apiKey, strings.Replace(v.Message.GetConversation(), "-ask", "", -1))
