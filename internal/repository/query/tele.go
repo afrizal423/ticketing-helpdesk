@@ -108,6 +108,13 @@ func UpdateOnChatConversationTiket(db *sql.DB, tiket string, emp string) {
 	}
 }
 
+func UpdateDoneOnChatConversationTiket(db *sql.DB, tiket string, emp string) {
+	_, err := db.Exec(`UPDATE IHD_TIKET SET END_CONVERSATION=SYSDATE, ON_CHAT='T', IS_DONE='Y', EMPLOYEE=:1 WHERE NO_TIKET=:2`, emp, tiket)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func TeleCekJikaOnChatDanBlmDone(db *sql.DB, emp string) int {
 	rows, err := db.Query(`
 			SELECT COUNT(1) JUM FROM IHD_TIKET

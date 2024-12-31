@@ -42,10 +42,9 @@ func (app *InitTele) DefaultHandler(ctx context.Context, b *bot.Bot, update *mod
 	// 	Text:   "Say /hello",
 	// })
 	// fmt.Println(update.Message.Text)
+	var tiket string
 
-	if teleCekJikaOnChatDanBlmDone(app.Db, strconv.FormatInt(update.Message.From.ID, 10)) == 1 {
-		app.on_chat(ctx, b, update, strconv.FormatInt(update.Message.From.ID, 10))
-	} else if strings.Contains(update.Message.Text, "/grab_tiket") && teleCekJikaOnChatDanBlmDone(app.Db, strconv.FormatInt(update.Message.From.ID, 10)) == 0 {
+	if strings.Contains(update.Message.Text, "/grab_ticket") && teleCekJikaOnChatDanBlmDone(app.Db, strconv.FormatInt(update.Message.From.ID, 10)) == 0 {
 		parts := strings.Fields(update.Message.Text)
 		if len(parts) > 1 {
 			// Mengambil elemen kedua yang merupakan kode
@@ -55,6 +54,26 @@ func (app *InitTele) DefaultHandler(ctx context.Context, b *bot.Bot, update *mod
 		} else {
 			fmt.Println("Kode tidak ditemukan")
 		}
+	} else if (strings.Contains(update.Message.Text, "/done_ticket") || strings.Contains(update.Message.Text, "/done_tiket")) && teleCekJikaOnChatDanBlmDone(app.Db, strconv.FormatInt(update.Message.From.ID, 10)) == 1 {
+		parts := strings.Fields(update.Message.Text)
+		if len(parts) > 1 {
+			// Mengambil elemen kedua yang merupakan kode
+			code := parts[1]
+			app.cek_done_tiket(ctx, b, update, code)
+			setDoneTiketNomornya(ctx, app.Rdb, strconv.FormatInt(update.Message.From.ID, 10), code)
+			// fmt.Println("Kode:", code)
+		} else {
+			fmt.Println("Kode tidak ditemukan")
+		}
+	} else if cekPosisiDoneTiket(ctx, app.Rdb, strconv.FormatInt(update.Message.From.ID, 10)) {
+		// if strings.ToUpper(update.Message.Text) == "Y" {
+
+		// }
+		tiket = getTiketDoneNomornya(ctx, app.Rdb, strconv.FormatInt(update.Message.From.ID, 10))
+		fmt.Println("Tiket yg ingin done:" + tiket)
+		app.done_tiket(ctx, b, update, tiket)
+	} else if teleCekJikaOnChatDanBlmDone(app.Db, strconv.FormatInt(update.Message.From.ID, 10)) == 1 && cekPosisiDoneTiket(ctx, app.Rdb, strconv.FormatInt(update.Message.From.ID, 10)) == false {
+		app.on_chat(ctx, b, update, strconv.FormatInt(update.Message.From.ID, 10))
 	} else {
 		_, err := b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID:    update.Message.Chat.ID,
@@ -127,6 +146,56 @@ func (app *InitTele) on_chat(ctx context.Context, b *bot.Bot, update *models.Upd
 
 }
 
+func (app *InitTele) cek_done_tiket(ctx context.Context, b *bot.Bot, update *models.Update, tiket string) {
+	if cekTiketIsOpen(app.Db, tiket) == 0 {
+		_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "Maaf tiket tidak ada atau sudah closed.",
+		})
+		if err != nil {
+			log.Printf("Error sending message: %v", err)
+		}
+	} else {
+		var res string
+		res = "Berikut adalah tiket dari nomor " + tiket + "\n\n"
+		res += GrabTiketAktif(app.Db, tiket)
+		res += "\nApakah anda yakin tiket ini sudah selesai ?\n"
+		res += bot.EscapeMarkdown("Jika iya sudah selesai, silahkan balas dengan *Y*\n")
+		res += bot.EscapeMarkdown("Jika belum selesai, silahkan balas dengan *T*\n")
+		// res = escapeSpecialChars(res)
+		_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:    update.Message.Chat.ID,
+			Text:      res,
+			ParseMode: models.ParseModeMarkdown,
+		})
+		if err != nil {
+			log.Printf("Error sending message: %v", err)
+		}
+
+		setDoneTiket(ctx, app.Rdb, strconv.FormatInt(update.Message.From.ID, 10))
+		// updateOnChatConversationTiket(app.Db, tiket, strconv.FormatInt(update.Message.From.ID, 10))
+	}
+}
+
+func (app *InitTele) done_tiket(ctx context.Context, b *bot.Bot, update *models.Update, tiket string) {
+	if strings.ToUpper(update.Message.Text) == "Y" {
+		var res string
+		res = "Terima kasih anda telah menyesaikan tiket nomor " + tiket + "\n\n"
+		res += "*" + bot.EscapeMarkdown("Good work") + "*"
+		_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:    update.Message.Chat.ID,
+			Text:      res,
+			ParseMode: models.ParseModeMarkdown,
+		})
+		if err != nil {
+			log.Printf("Error sending message: %v", err)
+		}
+		updateDoneOnChatConversationTiket(app.Db, ctx, app.Rdb, tiket, strconv.FormatInt(update.Message.From.ID, 10))
+	}
+
+	hapusStateDoneTiket(ctx, app.Rdb, strconv.FormatInt(update.Message.From.ID, 10))
+}
+
 func (app *InitTele) grab_tiket(ctx context.Context, b *bot.Bot, update *models.Update, tiket string) {
 	if cekTiketIsOpen(app.Db, tiket) == 0 {
 		_, err := b.SendMessage(ctx, &bot.SendMessageParams{
@@ -166,7 +235,7 @@ func (app *InitTele) HelloHandler(ctx context.Context, b *bot.Bot, update *model
 
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
-		Text:      "Hello, *" + bot.EscapeMarkdown(update.Message.From.FirstName) + "* " + strconv.FormatInt(update.Message.From.ID, 10),
+		Text:      "Hello, *" + bot.EscapeMarkdown(update.Message.From.FirstName) + "* ",
 		ParseMode: models.ParseModeMarkdown,
 	})
 	if err != nil {

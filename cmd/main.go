@@ -67,6 +67,7 @@ func main() {
 		ClientWA: clientWA,
 		Db:       db,
 		Token:    cfg.Telegram.Token,
+		Rdb:      rdb,
 	}
 	opts := []bot.Option{
 		bot.WithDefaultHandler(telex.DefaultHandler),

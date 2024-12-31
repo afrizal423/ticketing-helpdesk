@@ -1,11 +1,15 @@
 package tele
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
+	"time"
 
 	"github.com/afrizal423/ticketing-helpdesk/internal/repository/payload"
 	"github.com/afrizal423/ticketing-helpdesk/internal/repository/query"
 	"github.com/go-telegram/bot/models"
+	"github.com/redis/go-redis/v9"
 )
 
 func cekSudahDaftar(db *sql.DB, uid string) int {
@@ -45,6 +49,12 @@ func updateOnChatConversationTiket(db *sql.DB, notiket string, emp string) {
 	query.UpdateOnChatConversationTiket(db, notiket, emp)
 }
 
+func updateDoneOnChatConversationTiket(db *sql.DB, ctx context.Context, rdb *redis.Client, notiket string, emp string) {
+	query.UpdateDoneOnChatConversationTiket(db, notiket, emp)
+
+	hapusSesi(ctx, rdb, emp)
+}
+
 func teleCekJikaOnChatDanBlmDone(db *sql.DB, emp string) int {
 	jum := query.TeleCekJikaOnChatDanBlmDone(db, emp)
 	// fmt.Println(jum)
@@ -59,4 +69,57 @@ func teleGetTiketOnChat(db *sql.DB, emp string) (string, string) {
 
 func teleSimpanChatOn(db *sql.DB, arg payload.TeleInsertChat) {
 	query.TeleSimpanChatOn(db, arg)
+}
+
+func hapusStateDoneTiket(ctx context.Context, rdb *redis.Client, emp string) {
+	hapusSesi(ctx, rdb, emp)
+}
+
+func setDoneTiket(ctx context.Context, rdb *redis.Client, nowa string) {
+	err := rdb.Set(ctx, nowa, "set-done", 1*time.Minute).Err()
+	if err != nil {
+		fmt.Println("Error setting value:", err)
+		return
+	}
+}
+
+func setDoneTiketNomornya(ctx context.Context, rdb *redis.Client, nowa string, tiket string) {
+	err := rdb.Set(ctx, nowa+"_done", tiket, 1*time.Minute).Err()
+	if err != nil {
+		fmt.Println("Error setting value:", err)
+		return
+	}
+}
+
+func getTiketDoneNomornya(ctx context.Context, rdb *redis.Client, nowa string) (val string) {
+	val, err := rdb.Get(ctx, nowa+"_done").Result()
+	if err != nil {
+		if err == redis.Nil {
+			fmt.Println("Key tidak ditemukan.")
+			val = ""
+		} else {
+			fmt.Println("Error getting value:", err)
+			val = ""
+		}
+	}
+	return
+}
+
+func cekPosisiDoneTiket(ctx context.Context, rdb *redis.Client, nowa string) bool {
+	val, err := rdb.Get(ctx, nowa).Result()
+	if err != nil {
+		if err == redis.Nil {
+			fmt.Println("Key tidak ditemukan.")
+			return false
+		} else {
+			fmt.Println("Error getting value:", err)
+			return false
+		}
+	}
+
+	if val == "set-done" {
+		return true
+	}
+
+	return false
 }

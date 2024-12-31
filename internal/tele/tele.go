@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-telegram/bot"
+	"github.com/redis/go-redis/v9"
 	"go.mau.fi/whatsmeow"
 )
 
@@ -15,6 +16,7 @@ type InitTele struct {
 	Chatid   int64
 	Userid   int64
 	Token    string
+	Rdb      *redis.Client
 }
 
 func Mulai(ctx context.Context, db *sql.DB, b *bot.Bot, client *whatsmeow.Client, telex InitTele) error {
