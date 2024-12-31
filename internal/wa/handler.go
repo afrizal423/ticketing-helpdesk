@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/afrizal423/ticketing-helpdesk/internal/repository/payload"
 	handlerwa "github.com/afrizal423/ticketing-helpdesk/internal/tele/handler_wa"
@@ -44,11 +45,21 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 				fmt.Println(strings.ReplaceAll(string(cekUser), `"`, ""))
 				var pesan, no_hp_client string
 				var dariOrang types.JID
-				if strings.Contains(string(cekUser), ":") {
-					pesan = *v.Message.ExtendedTextMessage.Text
+				if v.Info.MediaType != "image" && v.Info.MediaType != "document" {
+					if strings.Contains(string(cekUser), ":") {
+						pesan = *v.Message.ExtendedTextMessage.Text
+					} else {
+						pesan = v.Message.GetConversation()
+					}
 				} else {
-					pesan = v.Message.GetConversation()
+					if v.Info.MediaType == "image" {
+						pesan = v.Message.ImageMessage.GetCaption()
+					} else if v.Info.MediaType == "document" {
+						pesan = v.Message.DocumentMessage.GetCaption()
+					}
+
 				}
+
 				log.Printf("pesannyaa %s", pesan)
 				dariOrang, _ = parseJID(getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
 				// Tentukan timestamp (waktu saat ini)
@@ -114,16 +125,83 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 					// pengecekkan bisa waktu daftar maupun ngecek mana masuk chat ticket yang aktif
 
 					if waCekJikaOnChatDanBlmDone(db, no_hp_client) == 1 {
-						no_tiket, notele := waGetTiketOnChat(db, no_hp_client)
-						var insert payload.WaInsertChat
-						insert.NoTiket = no_tiket
-						insert.Dari = no_hp_client
-						insert.Pesan = pesan
-						insert.Attch = ""
-						insert.Kepada = notele
-						waSimpanChatOn(db, insert)
-						pesan = escapeSpecialChars(pesan)
-						handlerwa.KirimTeledariWA(ctx, teleGo, pesan, notele)
+						if v.Info.MediaType == "image" {
+							// Download the image
+							data, err := client.Download(v.Message.GetImageMessage())
+							if err != nil {
+								fmt.Println("Failed to download image:", err)
+								return
+							}
+
+							// Save the image to a file
+							path := "storage/dari_wa"
+							nama_file := "image_" + no_hp_client + "_" + time.Now().Format("20060102_150405") + ".jpg"
+							err = saveFile(path, nama_file, data)
+							if err != nil {
+								fmt.Println("Failed to save image:", err)
+								return
+							}
+
+							fmt.Println("Image saved successfully!")
+
+							// kirim tele
+							no_tiket, notele := waGetTiketOnChat(db, no_hp_client)
+							var insert payload.WaInsertChat
+							insert.NoTiket = no_tiket
+							insert.Dari = no_hp_client
+							insert.Pesan = pesan
+							insert.Attch = path + "/" + nama_file
+							insert.Kepada = notele
+							waSimpanChatOn(db, insert)
+							pesan = escapeSpecialChars(pesan)
+							handlerwa.KirimTeleDokumenDariWA(ctx, teleGo, pesan, notele, path+"/"+nama_file, nama_file)
+
+						} else if v.Info.MediaType == "document" {
+							// Check if the document is a PDF
+							doc := v.Message.GetDocumentMessage()
+							if doc.GetMimetype() == "application/pdf" {
+								// Download the PDF
+								data, err := client.Download(doc)
+								if err != nil {
+									fmt.Println("Failed to download PDF:", err)
+									return
+								}
+
+								// Save the PDF to a file
+								path := "storage/dari_wa"
+								nama_file := "document_" + no_hp_client + "_" + time.Now().Format("20060102_150405") + ".pdf"
+								err = saveFile(path, nama_file, data)
+								if err != nil {
+									fmt.Println("Failed to save PDF:", err)
+									return
+								}
+
+								fmt.Println("PDF saved successfully!")
+
+								// kirim tele
+								no_tiket, notele := waGetTiketOnChat(db, no_hp_client)
+								var insert payload.WaInsertChat
+								insert.NoTiket = no_tiket
+								insert.Dari = no_hp_client
+								insert.Pesan = pesan
+								insert.Attch = path + "/" + nama_file
+								insert.Kepada = notele
+								waSimpanChatOn(db, insert)
+								pesan = escapeSpecialChars(pesan)
+								handlerwa.KirimTeleDokumenDariWA(ctx, teleGo, pesan, notele, path+"/"+nama_file, nama_file)
+							}
+						} else {
+							no_tiket, notele := waGetTiketOnChat(db, no_hp_client)
+							var insert payload.WaInsertChat
+							insert.NoTiket = no_tiket
+							insert.Dari = no_hp_client
+							insert.Pesan = pesan
+							insert.Attch = ""
+							insert.Kepada = notele
+							waSimpanChatOn(db, insert)
+							pesan = escapeSpecialChars(pesan)
+							handlerwa.KirimTeledariWA(ctx, teleGo, pesan, notele)
+						}
 					} else
 					// cekan posisi daftar isi nama
 					if CekPosisiDaftarNama(ctx, rdb, no_hp_client) {

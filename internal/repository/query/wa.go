@@ -140,7 +140,7 @@ func WaGetTiketOnChat(db *sql.DB, emp string) (string, string) {
 }
 
 func WaSimpanChatOn(db *sql.DB, arg payload.WaInsertChat) {
-	_, err := db.Exec(`INSERT INTO IHD_TIKET_DISCUSS (NO_TIKET, DARI, PESAN, IS_CLIENT, LOG_TGL, KEPADA) VALUES (:1, :2, :3, 'Y', SYSDATE, :4)`, arg.NoTiket, arg.Dari, arg.Pesan, arg.Kepada)
+	_, err := db.Exec(`INSERT INTO IHD_TIKET_DISCUSS (NO_TIKET, DARI, PESAN, IS_CLIENT, LOG_TGL, KEPADA, ATTCHMENT) VALUES (:1, :2, :3, 'Y', SYSDATE, :4, :5)`, arg.NoTiket, arg.Dari, arg.Pesan, arg.Kepada, arg.Attch)
 	if err != nil {
 		log.Fatal(err)
 	}

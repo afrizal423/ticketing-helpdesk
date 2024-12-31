@@ -3,7 +3,10 @@ package wa
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/redis/go-redis/v9"
@@ -83,4 +86,17 @@ func escapeSpecialChars(input string) string {
 	}
 
 	return input
+}
+
+func saveFile(dir, filename string, data []byte) error {
+	// Create the directory if it doesn't exist
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
+
+	// Create the full file path
+	filePath := filepath.Join(dir, filename)
+
+	// Write the data to the file
+	return ioutil.WriteFile(filePath, data, 0644)
 }
