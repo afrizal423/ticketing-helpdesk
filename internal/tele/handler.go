@@ -71,7 +71,7 @@ func (app *InitTele) DefaultHandler(ctx context.Context, b *bot.Bot, update *mod
 		// }
 		tiket = getTiketDoneNomornya(ctx, app.Rdb, strconv.FormatInt(update.Message.From.ID, 10))
 		fmt.Println("Tiket yg ingin done:" + tiket)
-		app.done_tiket(ctx, b, update, tiket)
+		app.done_tiket(ctx, b, update, tiket, strconv.FormatInt(update.Message.From.ID, 10))
 	} else if teleCekJikaOnChatDanBlmDone(app.Db, strconv.FormatInt(update.Message.From.ID, 10)) == 1 && cekPosisiDoneTiket(ctx, app.Rdb, strconv.FormatInt(update.Message.From.ID, 10)) == false {
 		app.on_chat(ctx, b, update, strconv.FormatInt(update.Message.From.ID, 10))
 	} else {
@@ -177,7 +177,7 @@ func (app *InitTele) cek_done_tiket(ctx context.Context, b *bot.Bot, update *mod
 	}
 }
 
-func (app *InitTele) done_tiket(ctx context.Context, b *bot.Bot, update *models.Update, tiket string) {
+func (app *InitTele) done_tiket(ctx context.Context, b *bot.Bot, update *models.Update, tiket string, emp string) {
 	if strings.ToUpper(update.Message.Text) == "Y" {
 		var res string
 		res = "Terima kasih anda telah menyesaikan tiket nomor " + tiket + "\n\n"
@@ -190,7 +190,12 @@ func (app *InitTele) done_tiket(ctx context.Context, b *bot.Bot, update *models.
 		if err != nil {
 			log.Printf("Error sending message: %v", err)
 		}
+		_, nowa := teleGetTiketOnChat(app.Db, emp)
 		updateDoneOnChatConversationTiket(app.Db, ctx, app.Rdb, tiket, strconv.FormatInt(update.Message.From.ID, 10))
+
+		var finall string
+		finall = "Tiket anda dengan nomor *" + tiket + "*, telah selesai ditutup.\nAnda tidak lagi terhubung dengan kami.\n\n*Terima kasih*"
+		wa.KirimdariTeleHandler(ctx, b, app.ClientWA, finall, nowa)
 	}
 
 	hapusStateDoneTiket(ctx, app.Rdb, strconv.FormatInt(update.Message.From.ID, 10))
