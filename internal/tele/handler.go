@@ -7,7 +7,6 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/afrizal423/ticketing-helpdesk/internal/wa"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 )
@@ -38,12 +37,19 @@ func (app *InitTele) DefaultHandler(ctx context.Context, b *bot.Bot, update *mod
 	// 	Text:   "Say /hello",
 	// })
 	// fmt.Println(update.Message.Text)
-	wa.KirimdariTeleHandler(ctx, b, app.ClientWA, update.Message.Text)
+	// wa.KirimdariTeleHandler(ctx, b, app.ClientWA, update.Message.Text)
 }
 
-func HelloHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	jsonData, _ := json.Marshal(update)
-	fmt.Println(string(jsonData))
+func (app *InitTele) HelloHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	// jsonData, _ := json.Marshal(update)
+	// fmt.Println(string(jsonData))
+	jum := cekSudahDaftar(app.Db, strconv.FormatInt(update.Message.From.ID, 10))
+	if jum == 0 {
+		simpanDataEmployee(app.Db, update)
+	}
+
+	app.Chatid = update.Message.Chat.ID
+	app.Userid = update.Message.From.ID
 
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,

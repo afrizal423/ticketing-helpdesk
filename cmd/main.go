@@ -8,10 +8,10 @@ import (
 	"syscall"
 
 	"github.com/afrizal423/ticketing-helpdesk/internal/tele"
-	"github.com/afrizal423/ticketing-helpdesk/internal/wa"
 	"github.com/afrizal423/ticketing-helpdesk/pkg/config"
 	"github.com/afrizal423/ticketing-helpdesk/pkg/database"
 	"github.com/go-telegram/bot"
+	_ "github.com/mattn/go-sqlite3"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	waLog "go.mau.fi/whatsmeow/util/log"
@@ -37,10 +37,10 @@ func main() {
 	defer db.Close()
 
 	// redis
-	rdb, err := database.Redis(appContext, database.ConfigRedis(cfg.Redis))
-	if err != nil {
-		log.Fatalf("Error connecting to database: %v", err)
-	}
+	// rdb, err := database.Redis(appContext, database.ConfigRedis(cfg.Redis))
+	// if err != nil {
+	// 	log.Fatalf("Error connecting to database: %v", err)
+	// }
 
 	// Create a channel to listen for interrupt signals
 	interruptChan := make(chan os.Signal, 1)
@@ -64,6 +64,7 @@ func main() {
 	// init tele
 	telex := &tele.InitTele{
 		ClientWA: clientWA,
+		Db:       db,
 	}
 	opts := []bot.Option{
 		bot.WithDefaultHandler(telex.DefaultHandler),
@@ -77,16 +78,16 @@ func main() {
 
 	// wa
 	// Start WhatsApp bot
-	go func() {
-		if err := wa.Mulai(appContext, db, teleGo, clientWA, rdb); err != nil {
-			log.Fatalf("WhatsApp bot failed: %v", err)
-		}
-	}()
+	// go func() {
+	// 	if err := wa.Mulai(appContext, db, teleGo, clientWA, rdb); err != nil {
+	// 		log.Fatalf("WhatsApp bot failed: %v", err)
+	// 	}
+	// }()
 
 	//tele
 	// Start Telegram bot
 	go func() {
-		if err := tele.Mulai(appContext, db, teleGo, clientWA); err != nil {
+		if err := tele.Mulai(appContext, db, teleGo, clientWA, *telex); err != nil {
 			log.Fatalf("Telegram bot failed: %v", err)
 		}
 	}()
