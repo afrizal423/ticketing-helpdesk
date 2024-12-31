@@ -17,8 +17,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func KirimdariTeleHandler(ctx context.Context, teleGo *bot.Bot, client *whatsmeow.Client, msgTele string) {
-	aku, _ := parseJID("NOMORKU")
+func KirimdariTeleHandler(ctx context.Context, teleGo *bot.Bot, client *whatsmeow.Client, msgTele string, kepada string) {
+	aku, _ := parseJID(kepada)
 	pesan := msgTele
 	var pointerToPesan *string = &pesan
 

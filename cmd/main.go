@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/afrizal423/ticketing-helpdesk/internal/tele"
+	"github.com/afrizal423/ticketing-helpdesk/internal/wa"
 	"github.com/afrizal423/ticketing-helpdesk/pkg/config"
 	"github.com/afrizal423/ticketing-helpdesk/pkg/database"
 	"github.com/go-telegram/bot"
@@ -37,10 +38,10 @@ func main() {
 	defer db.Close()
 
 	// redis
-	// rdb, err := database.Redis(appContext, database.ConfigRedis(cfg.Redis))
-	// if err != nil {
-	// 	log.Fatalf("Error connecting to database: %v", err)
-	// }
+	rdb, err := database.Redis(appContext, database.ConfigRedis(cfg.Redis))
+	if err != nil {
+		log.Fatalf("Error connecting to database: %v", err)
+	}
 
 	// Create a channel to listen for interrupt signals
 	interruptChan := make(chan os.Signal, 1)
@@ -78,11 +79,11 @@ func main() {
 
 	// wa
 	// Start WhatsApp bot
-	// go func() {
-	// 	if err := wa.Mulai(appContext, db, teleGo, clientWA, rdb); err != nil {
-	// 		log.Fatalf("WhatsApp bot failed: %v", err)
-	// 	}
-	// }()
+	go func() {
+		if err := wa.Mulai(appContext, db, teleGo, clientWA, rdb); err != nil {
+			log.Fatalf("WhatsApp bot failed: %v", err)
+		}
+	}()
 
 	//tele
 	// Start Telegram bot

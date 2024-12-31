@@ -22,6 +22,7 @@ func Mulai(ctx context.Context, db *sql.DB, b *bot.Bot, client *whatsmeow.Client
 	// defer cancel()
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, telex.HelloHandler)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/list_tiket", bot.MatchTypeExact, telex.listTiket)
 	b.Start(ctx)
 	return nil
 }
