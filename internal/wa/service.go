@@ -127,9 +127,142 @@ func hapusStateDaftar(db *sql.DB, ctx context.Context, rdb *redis.Client, nowa s
 
 	query.SimpanDataClient(db, res)
 
-	err = rdb.Del(ctx, nowa+"*").Err()
+	hapusSesi(ctx, rdb, nowa)
+}
+
+func setJudulTiket(ctx context.Context, rdb *redis.Client, nowa string) {
+	err := rdb.Set(ctx, nowa, "set-judul", 5*time.Minute).Err()
 	if err != nil {
-		fmt.Println("Error deleting value:", err)
+		fmt.Println("Error setting value:", err)
 		return
 	}
+}
+
+func CekPosisiJudulTiket(ctx context.Context, rdb *redis.Client, nowa string) bool {
+	val, err := rdb.Get(ctx, nowa).Result()
+	if err != nil {
+		if err == redis.Nil {
+			fmt.Println("Key tidak ditemukan.")
+			return false
+		} else {
+			fmt.Println("Error getting value:", err)
+			return false
+		}
+	}
+
+	if val == "set-judul" {
+		return true
+	}
+	return false
+}
+
+func simpanJudulTiket(ctx context.Context, rdb *redis.Client, nowa string, isi string) {
+	err := rdb.Set(ctx, nowa+"_judul", isi, 5*time.Minute).Err()
+	if err != nil {
+		fmt.Println("Error setting value:", err)
+		return
+	}
+}
+
+func setIsiTiket(ctx context.Context, rdb *redis.Client, nowa string) {
+	err := rdb.Set(ctx, nowa, "set-isi", 5*time.Minute).Err()
+	if err != nil {
+		fmt.Println("Error setting value:", err)
+		return
+	}
+}
+
+func CekPosisiIsiTiket(ctx context.Context, rdb *redis.Client, nowa string) bool {
+	val, err := rdb.Get(ctx, nowa).Result()
+	if err != nil {
+		if err == redis.Nil {
+			fmt.Println("Key tidak ditemukan.")
+			return false
+		} else {
+			fmt.Println("Error getting value:", err)
+			return false
+		}
+	}
+
+	if val == "set-isi" {
+		return true
+	}
+	return false
+}
+
+func simpanDetailTiket(ctx context.Context, rdb *redis.Client, nowa string, isi string) {
+	err := rdb.Set(ctx, nowa+"_detail", isi, 5*time.Minute).Err()
+	if err != nil {
+		fmt.Println("Error setting value:", err)
+		return
+	}
+}
+
+func setAttchTiket(ctx context.Context, rdb *redis.Client, nowa string) {
+	err := rdb.Set(ctx, nowa, "set-attc", 5*time.Minute).Err()
+	if err != nil {
+		fmt.Println("Error setting value:", err)
+		return
+	}
+}
+
+func CekPosisiAttcTiket(ctx context.Context, rdb *redis.Client, nowa string) bool {
+	val, err := rdb.Get(ctx, nowa).Result()
+	if err != nil {
+		if err == redis.Nil {
+			fmt.Println("Key tidak ditemukan.")
+			return false
+		} else {
+			fmt.Println("Error getting value:", err)
+			return false
+		}
+	}
+
+	if val == "set-attc" {
+		return true
+	}
+	return false
+}
+
+func simpanTiketTanpaAttch(db *sql.DB, ctx context.Context, rdb *redis.Client, nowa string) (nomor string) {
+	// insert data dahulu
+	val, err := rdb.Get(ctx, nowa+"_judul").Result()
+	if err != nil {
+		if err == redis.Nil {
+			fmt.Println("Key tidak ditemukan.")
+		} else {
+			fmt.Println("Error getting value:", err)
+		}
+	}
+	judul := val
+
+	val, err = rdb.Get(ctx, nowa+"_detail").Result()
+	if err != nil {
+		if err == redis.Nil {
+			fmt.Println("Key tidak ditemukan.")
+		} else {
+			fmt.Println("Error getting value:", err)
+		}
+	}
+	isi := val
+
+	nomor = query.GenerateKodeTiket(db, nowa)
+
+	// fmt.Println(nama + lokasi)
+	var res payload.SimpanTiketClient
+	res.Nowa = nowa
+	res.NoTiket = nomor
+	res.Judul = judul
+	res.Isi = isi
+
+	query.SimpanTiketClient(db, res)
+
+	hapusSesi(ctx, rdb, nowa)
+
+	return
+}
+
+func listMyKodeTiket(db *sql.DB, nowa string) (res string) {
+	res = query.ListMyKodeTiket(db, nowa)
+	return
 }

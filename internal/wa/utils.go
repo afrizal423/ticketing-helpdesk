@@ -1,8 +1,12 @@
 package wa
 
 import (
+	"context"
+	"fmt"
+	"log"
 	"strings"
 
+	"github.com/redis/go-redis/v9"
 	"go.mau.fi/whatsmeow/types"
 )
 
@@ -37,4 +41,33 @@ func parseJID(arg string) (types.JID, bool) {
 		}
 		return recipient, true
 	}
+}
+
+func hapusSesi(ctx context.Context, rdb *redis.Client, nowa string) {
+	var cursor uint64
+	for {
+		// Mengambil key
+		keys, nextCursor, err := rdb.Scan(ctx, cursor, "*"+nowa+"*", 0).Result()
+		if err != nil {
+			log.Fatalf("Error scanning keys: %v", err)
+		}
+
+		// Menghapus key yang ditemukan
+		for _, key := range keys {
+			err := rdb.Del(ctx, key).Err()
+			if err != nil {
+				log.Printf("Error deleting key %s: %v", key, err)
+			} else {
+				fmt.Printf("Deleted key: %s\n", key)
+			}
+		}
+
+		// Jika cursor 0, berarti sudah tidak ada lagi key yang tersisa
+		cursor = nextCursor
+		if cursor == 0 {
+			break
+		}
+	}
+
+	fmt.Println("Selesai menghapus key.")
 }

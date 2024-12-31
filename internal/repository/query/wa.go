@@ -44,3 +44,59 @@ func SimpanDataClient(db *sql.DB, arg payload.SimpanDataClient) {
 		log.Fatal(err)
 	}
 }
+
+func GenerateKodeTiket(db *sql.DB, nowa string) string {
+	var nomor string
+	// Use QueryRow to fetch a single row
+	q := `
+	SELECT 
+		TRIM(SUBSTR(NOD, 1, 5)) 
+		|| TRIM(TO_CHAR(TO_NUMBER(SUBSTR(NOD, 6)) + 1, '0000000')) NO_LANJUT
+	FROM 
+	(
+		SELECT NVL(MAX(NO_TIKET), 'IHD' ||TO_CHAR(SYSDATE,'YY')|| '0000000') NOD
+		FROM IHD_TIKET
+		WHERE NO_TIKET LIKE 'IHD' || TO_CHAR(SYSDATE,'YY')|| '%'
+	) AP
+	`
+	err := db.QueryRow(q).Scan(&nomor)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "" // No user found
+		}
+		return "" // Return the error if something else went wrong
+	}
+	return nomor // Return the user struct
+}
+
+func SimpanTiketClient(db *sql.DB, arg payload.SimpanTiketClient) {
+	_, err := db.Exec(`INSERT INTO IHD_TIKET (NO_TIKET, NO_WA_CLIENT, JUDUL, ISI, LOG_TGL) 
+			VALUES (:1, :2, :3, :4, SYSDATE)`, arg.NoTiket, arg.Nowa, arg.Judul, arg.Isi)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func ListMyKodeTiket(db *sql.DB, nowa string) string {
+	rows, err := db.Query(`SELECT NO_TIKET,
+			CASE WHEN IS_DONE = 'T' THEN 'OPEN' ELSE 'CLOSE' END STATUS
+		FROM IHD_TIKET 
+		WHERE NO_WA_CLIENT=:1
+		ORDER BY LOG_TGL`, nowa)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var res string
+	for rows.Next() {
+		var datanya payload.ListTiketHeader
+		if err := rows.Scan(&datanya.NoTiket, &datanya.Status); err != nil {
+			log.Fatal(err)
+		}
+		// users = append(users, user)
+		res += "- *" + datanya.NoTiket + "* status: *" + datanya.Status + "*\n"
+	}
+
+	return res
+}

@@ -40,7 +40,7 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 				log.Printf("Ada pesan dari %s", v.Info.Sender)
 				cekUser, _ := json.Marshal(v.Info.Sender)
 				fmt.Println(strings.ReplaceAll(string(cekUser), `"`, ""))
-				var pesan string
+				var pesan, no_hp_client string
 				var dariOrang types.JID
 				if strings.Contains(string(cekUser), ":") {
 					pesan = *v.Message.ExtendedTextMessage.Text
@@ -55,13 +55,14 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 				// client.MarkRead([]types.MessageID{v.Info.ID}, timestamp, v.Info.Chat, v.Info.Sender)
 				jsonData, _ := json.Marshal(dariOrang)
 				fmt.Println(string(jsonData))
+				no_hp_client = getNomorHP(strings.ReplaceAll(string(cekUser), `"`, ""))
 
 				// handlerwa.KirimdariWA(ctx, teleGo, pesan)
 
 				// start disini
 				var resp string
 				if strings.Contains(pesan, "!start") || strings.Contains(pesan, "!mulai") {
-					cek := cekSudahDaftar(db, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
+					cek := cekSudahDaftar(db, no_hp_client)
 					if cek == 0 {
 						resp += "*Mohon maaf*, nomor anda belum terdaftar disistem kami.\n"
 						resp += "Silahkan ketik perintah !daftar untuk mendaftarkan diri anda terlebih dahulu"
@@ -69,7 +70,7 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 							Conversation: proto.String(resp),
 						})
 					} else {
-						nama, lokasi := GetIdentitasCLient(db, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
+						nama, lokasi := GetIdentitasCLient(db, no_hp_client)
 						resp = ""
 						resp += fmt.Sprintf("*Hai %s dari toko %s*, Selamat datang di Helpdesk ICT.\n", nama, lokasi)
 						// resp += "*Hai nama*, Selamat datang di Helpdesk ICT.\n"
@@ -78,39 +79,94 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 							Conversation: proto.String(resp),
 						})
 					}
-				}
-
-				if strings.Contains(pesan, "!register") || strings.Contains(pesan, "!daftar") {
-					cek := cekSudahDaftar(db, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
+				} else if strings.Contains(pesan, "!register") || strings.Contains(pesan, "!daftar") {
+					cek := cekSudahDaftar(db, no_hp_client)
 					if cek > 0 {
 						client.SendMessage(context.Background(), dariOrang, &waProto.Message{
 							Conversation: proto.String("*Mohon maaf* anda sudah terdaftar disistem kami.\nSilahkan ketik perintah !buattiket untuk membuat tiket."),
 						})
 					} else {
 						daftarAwalClient(ctx, client, teleGo, db, dariOrang, rdb)
-						setDaftarNama(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
+						setDaftarNama(ctx, rdb, no_hp_client)
 						pesan = ""
 					}
+				} else if strings.Contains(pesan, "!buattiket") || strings.Contains(pesan, "!createticket") {
+					tiketAwal(ctx, client, teleGo, db, dariOrang, rdb)
+					setJudulTiket(ctx, rdb, no_hp_client)
+					pesan = ""
+				} else if strings.Contains(pesan, "!tiketku") || strings.Contains(pesan, "!myticket") {
+					// Memisahkan string berdasarkan spasi
+					parts := strings.Fields(pesan)
+					if len(parts) > 1 {
+						// Mengambil elemen kedua yang merupakan kode
+						code := parts[1]
+						fmt.Println("Kode:", code)
+					} else {
+						// fmt.Println("Kode tidak ditemukan")
+						myTiket(ctx, client, teleGo, db, dariOrang, rdb, no_hp_client)
+					}
+					pesan = ""
 				} else {
+
 					// else ini mengecek pesan bukan dair perintah
 					// pengecekkan bisa waktu daftar maupun ngecek mana masuk chat ticket yang aktif
 
-					if CekPosisiDaftarNama(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, ""))) {
+					// cekan posisi daftar isi nama
+					if CekPosisiDaftarNama(ctx, rdb, no_hp_client) {
 						if len(pesan) > 2 {
-							simpanDaftarNama(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")), pesan)
+							simpanDaftarNama(ctx, rdb, no_hp_client, pesan)
 							daftarAwalClientLokasi(ctx, client, teleGo, db, dariOrang, rdb)
-							setLokasiAsal(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
+							setLokasiAsal(ctx, rdb, no_hp_client)
 							pesan = ""
 						}
 					}
 
-					if CekPosisiLokasiAsal(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, ""))) {
+					// cekan posisi daftar isi lokasi
+					if CekPosisiLokasiAsal(ctx, rdb, no_hp_client) {
 						// fmt.Println(pesan)
 						if len(pesan) > 2 {
-							simpanLokasiAsal(ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")), pesan)
+							simpanLokasiAsal(ctx, rdb, no_hp_client, pesan)
 							akhiriDaftar(ctx, client, teleGo, db, dariOrang, rdb)
-							hapusStateDaftar(db, ctx, rdb, getNomorHP(strings.ReplaceAll(string(cekUser), `"`, "")))
+							hapusStateDaftar(db, ctx, rdb, no_hp_client)
 							pesan = ""
+						}
+					}
+
+					// cekan posisi isi judul tiket
+					if CekPosisiJudulTiket(ctx, rdb, no_hp_client) {
+						if len(pesan) > 2 {
+							simpanJudulTiket(ctx, rdb, no_hp_client, pesan)
+							tiketDeskripsi(ctx, client, teleGo, db, dariOrang, rdb)
+							setIsiTiket(ctx, rdb, no_hp_client)
+							pesan = ""
+						}
+					}
+
+					// cekan posisi isi tiket
+					if CekPosisiIsiTiket(ctx, rdb, no_hp_client) {
+						if len(pesan) > 2 {
+							simpanDetailTiket(ctx, rdb, no_hp_client, pesan)
+							tiketLampiran(ctx, client, teleGo, db, dariOrang, rdb)
+							setAttchTiket(ctx, rdb, no_hp_client)
+							pesan = ""
+						}
+					}
+
+					// cekan posisi attach tiket
+					if CekPosisiAttcTiket(ctx, rdb, no_hp_client) {
+						if len(pesan) >= 2 && (pesan == "tidak" || pesan == "no") {
+							notiket := simpanTiketTanpaAttch(db, ctx, rdb, no_hp_client)
+							akhiriBuatTiket(ctx, client, teleGo, db, dariOrang, rdb, notiket)
+							// hapusStateDaftar(db, ctx, rdb, no_hp_client)
+
+							pesan = ""
+						} else if len(pesan) >= 2 && (pesan != "tidak" || pesan != "no") {
+							client.SendMessage(context.Background(), dariOrang, &waProto.Message{
+								Conversation: proto.String("*Mohon maaf* tidak sesuai format !!!."),
+							})
+							pesan = ""
+						} else {
+							// disini upload file
 						}
 					}
 				}
