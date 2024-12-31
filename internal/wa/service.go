@@ -266,3 +266,19 @@ func listMyKodeTiket(db *sql.DB, nowa string) (res string) {
 	res = query.ListMyKodeTiket(db, nowa)
 	return
 }
+
+func waCekJikaOnChatDanBlmDone(db *sql.DB, emp string) int {
+	tkt := query.WACekJikaOnChatDanBlmDone(db, emp)
+	// fmt.Println(jum)
+	return tkt
+}
+
+func waGetTiketOnChat(db *sql.DB, emp string) (string, string) {
+	tkt, wa := query.WaGetTiketOnChat(db, emp)
+	// fmt.Println(jum)
+	return tkt, wa
+}
+
+func waSimpanChatOn(db *sql.DB, arg payload.WaInsertChat) {
+	query.WaSimpanChatOn(db, arg)
+}

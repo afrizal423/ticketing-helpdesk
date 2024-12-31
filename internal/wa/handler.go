@@ -8,6 +8,8 @@ import (
 	"log"
 	"strings"
 
+	"github.com/afrizal423/ticketing-helpdesk/internal/repository/payload"
+	handlerwa "github.com/afrizal423/ticketing-helpdesk/internal/tele/handler_wa"
 	"github.com/go-telegram/bot"
 	"github.com/redis/go-redis/v9"
 	"go.mau.fi/whatsmeow"
@@ -111,6 +113,18 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 					// else ini mengecek pesan bukan dair perintah
 					// pengecekkan bisa waktu daftar maupun ngecek mana masuk chat ticket yang aktif
 
+					if waCekJikaOnChatDanBlmDone(db, no_hp_client) == 1 {
+						no_tiket, notele := waGetTiketOnChat(db, no_hp_client)
+						var insert payload.WaInsertChat
+						insert.NoTiket = no_tiket
+						insert.Dari = no_hp_client
+						insert.Pesan = pesan
+						insert.Attch = ""
+						insert.Kepada = notele
+						waSimpanChatOn(db, insert)
+						pesan = escapeSpecialChars(pesan)
+						handlerwa.KirimTeledariWA(ctx, teleGo, pesan, notele)
+					} else
 					// cekan posisi daftar isi nama
 					if CekPosisiDaftarNama(ctx, rdb, no_hp_client) {
 						if len(pesan) > 2 {
@@ -119,8 +133,7 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 							setLokasiAsal(ctx, rdb, no_hp_client)
 							pesan = ""
 						}
-					}
-
+					} else
 					// cekan posisi daftar isi lokasi
 					if CekPosisiLokasiAsal(ctx, rdb, no_hp_client) {
 						// fmt.Println(pesan)
@@ -130,8 +143,7 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 							hapusStateDaftar(db, ctx, rdb, no_hp_client)
 							pesan = ""
 						}
-					}
-
+					} else
 					// cekan posisi isi judul tiket
 					if CekPosisiJudulTiket(ctx, rdb, no_hp_client) {
 						if len(pesan) > 2 {
@@ -140,8 +152,7 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 							setIsiTiket(ctx, rdb, no_hp_client)
 							pesan = ""
 						}
-					}
-
+					} else
 					// cekan posisi isi tiket
 					if CekPosisiIsiTiket(ctx, rdb, no_hp_client) {
 						if len(pesan) > 2 {
@@ -150,8 +161,7 @@ func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.
 							setAttchTiket(ctx, rdb, no_hp_client)
 							pesan = ""
 						}
-					}
-
+					} else
 					// cekan posisi attach tiket
 					if CekPosisiAttcTiket(ctx, rdb, no_hp_client) {
 						if len(pesan) >= 2 && (pesan == "tidak" || pesan == "no") {

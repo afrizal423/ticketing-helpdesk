@@ -71,3 +71,16 @@ func hapusSesi(ctx context.Context, rdb *redis.Client, nowa string) {
 
 	fmt.Println("Selesai menghapus key.")
 }
+
+// escapeSpecialChars menambahkan backslash sebelum karakter khusus
+func escapeSpecialChars(input string) string {
+	// Daftar karakter yang perlu di-escape
+	specialChars := []string{".", "-", "!", "(", ")", "_", "*", "[", "]", "~", "`", ">", "#", "+", "=", "|", "{", "}"}
+
+	// Gantikan setiap karakter khusus dengan versi yang di-escape
+	for _, char := range specialChars {
+		input = strings.ReplaceAll(input, char, "\\"+char)
+	}
+
+	return input
+}

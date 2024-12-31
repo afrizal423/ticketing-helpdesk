@@ -100,3 +100,48 @@ func ListMyKodeTiket(db *sql.DB, nowa string) string {
 
 	return res
 }
+
+func WACekJikaOnChatDanBlmDone(db *sql.DB, emp string) int {
+	rows, err := db.Query(`
+			SELECT COUNT(1) JUM FROM IHD_TIKET
+			WHERE IS_DONE='T' AND ON_CHAT='Y' AND NO_WA_CLIENT=:1
+			`, emp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	var JUM int
+	for rows.Next() {
+		err := rows.Scan(&JUM)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return JUM
+}
+
+func WaGetTiketOnChat(db *sql.DB, emp string) (string, string) {
+	rows, err := db.Query(`
+			SELECT NO_TIKET JUM, EMPLOYEE TELE FROM IHD_TIKET
+			WHERE IS_DONE='T' AND ON_CHAT='Y' AND NO_WA_CLIENT=:1
+			`, emp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	var JUM, TELE string
+	for rows.Next() {
+		err := rows.Scan(&JUM, &TELE)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return JUM, TELE
+}
+
+func WaSimpanChatOn(db *sql.DB, arg payload.WaInsertChat) {
+	_, err := db.Exec(`INSERT INTO IHD_TIKET_DISCUSS (NO_TIKET, DARI, PESAN, IS_CLIENT, LOG_TGL, KEPADA) VALUES (:1, :2, :3, 'Y', SYSDATE, :4)`, arg.NoTiket, arg.Dari, arg.Pesan, arg.Kepada)
+	if err != nil {
+		log.Fatal(err)
+	}
+}

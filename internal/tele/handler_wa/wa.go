@@ -10,9 +10,9 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-func KirimdariWA(ctx context.Context, b *bot.Bot, pesan string) {
+func KirimTeledariWA(ctx context.Context, b *bot.Bot, pesan string, kepada string) {
 	jsonData, _ := json.Marshal(&bot.SendMessageParams{
-		ChatID:    "576507972",
+		ChatID:    kepada,
 		Text:      pesan,
 		ParseMode: models.ParseModeMarkdown,
 	})
@@ -21,7 +21,7 @@ func KirimdariWA(ctx context.Context, b *bot.Bot, pesan string) {
 	fmt.Println(pesan)
 
 	_, err := b.SendMessage(context.Background(), &bot.SendMessageParams{
-		ChatID:    "576507972",
+		ChatID:    kepada,
 		Text:      pesan,
 		ParseMode: models.ParseModeMarkdown,
 	})

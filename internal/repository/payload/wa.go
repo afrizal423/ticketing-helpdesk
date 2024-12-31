@@ -22,3 +22,11 @@ type ListTiketHeader struct {
 	NoTiket string
 	Status  string
 }
+
+type WaInsertChat struct {
+	NoTiket string
+	Dari    string
+	Pesan   string
+	Attch   string
+	Kepada  string
+}
