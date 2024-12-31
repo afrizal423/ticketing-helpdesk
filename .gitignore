@@ -1,3 +1,5 @@
 config.yaml
 *.db
-storage/dari_wa/*
+storage/dari_*/*.pdf
+storage/dari_*/*.jpg
+storage/dari_*/*.png

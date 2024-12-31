@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -33,6 +35,82 @@ func KirimdariTeleHandler(ctx context.Context, teleGo *bot.Bot, client *whatsmeo
 	// var pesan = "> ⓘ _This number was temporarily banned from WhatsApp for participating in a group of sad single men on Saturday nights. This WhatsApp was confiscated by the Republic of Indonesia Police Institution._"
 	client.SendMessage(ctx, aku, msg)
 	fmt.Println("masukk")
+}
+
+func KirimdariTeleHandlerSendImage(ctx context.Context, cli *whatsmeow.Client, kepada string, filePath string, caption string) {
+	// Read the file
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Fatalf("Failed to read file: %v", err)
+	}
+
+	ke, _ := parseJID(kepada)
+
+	// Upload the file
+	uploaded, err := cli.Upload(context.Background(), data, whatsmeow.MediaImage) // Change MediaImage to MediaDocument for PDFs
+	if err != nil {
+		log.Fatalf("Failed to upload file: %v", err)
+	}
+
+	// Create the message
+	msg := &waProto.Message{
+		ImageMessage: &waProto.ImageMessage{
+			Caption:       proto.String(caption),
+			URL:           proto.String(uploaded.URL),
+			DirectPath:    proto.String(uploaded.DirectPath),
+			MediaKey:      uploaded.MediaKey,
+			Mimetype:      proto.String(http.DetectContentType(data)),
+			FileEncSHA256: uploaded.FileEncSHA256,
+			FileSHA256:    uploaded.FileSHA256,
+			FileLength:    proto.Uint64(uint64(len(data))),
+		},
+	}
+
+	// Send the message
+	resp, err := cli.SendMessage(context.Background(), ke, &waProto.Message{ImageMessage: msg.ImageMessage})
+	if err != nil {
+		log.Fatalf("Error sending message: %v", err)
+	} else {
+		log.Printf("Message sent (server timestamp: %s)", resp.Timestamp)
+	}
+}
+
+func KirimdariTeleHandlersendPDF(ctx context.Context, cli *whatsmeow.Client, kepada string, filePath string, caption string) {
+	// Read the PDF file
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Fatalf("Failed to read PDF file: %v", err)
+	}
+
+	ke, _ := parseJID(kepada)
+
+	// Upload the PDF file
+	uploaded, err := cli.Upload(context.Background(), data, whatsmeow.MediaDocument)
+	if err != nil {
+		log.Fatalf("Failed to upload PDF file: %v", err)
+	}
+
+	// Create the message for the PDF document
+	msg := &waProto.Message{
+		DocumentMessage: &waProto.DocumentMessage{
+			Title:         proto.String(caption), // Title of the document
+			URL:           proto.String(uploaded.URL),
+			DirectPath:    proto.String(uploaded.DirectPath),
+			MediaKey:      uploaded.MediaKey,
+			Mimetype:      proto.String("application/pdf"), // Set MIME type for PDF
+			FileEncSHA256: uploaded.FileEncSHA256,
+			FileSHA256:    uploaded.FileSHA256,
+			FileLength:    proto.Uint64(uint64(len(data))),
+		},
+	}
+
+	// Send the message
+	resp, err := cli.SendMessage(context.Background(), ke, &waProto.Message{DocumentMessage: msg.DocumentMessage})
+	if err != nil {
+		log.Fatalf("Error sending PDF message: %v", err)
+	} else {
+		log.Printf("PDF sent successfully (server timestamp: %s)", resp.Timestamp)
+	}
 }
 
 func GetEventHandler(ctx context.Context, client *whatsmeow.Client, teleGo *bot.Bot, db *sql.DB, rdb *redis.Client) func(interface{}) {

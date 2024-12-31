@@ -69,16 +69,62 @@ func (app *InitTele) DefaultHandler(ctx context.Context, b *bot.Bot, update *mod
 }
 
 func (app *InitTele) on_chat(ctx context.Context, b *bot.Bot, update *models.Update, emp string) {
-	no_tiket, nowa := teleGetTiketOnChat(app.Db, emp)
-	var insert payload.TeleInsertChat
-	insert.NoTiket = no_tiket
-	insert.Dari = emp
-	insert.Pesan = update.Message.Text
-	insert.Attch = ""
-	insert.Kepada = nowa
-	teleSimpanChatOn(app.Db, insert)
-	fmt.Println(no_tiket + " " + emp + " " + update.Message.Text)
-	wa.KirimdariTeleHandler(ctx, b, app.ClientWA, update.Message.Text, nowa)
+	var caption string
+	if update.Message.Caption != "" {
+		caption = update.Message.Caption
+	}
+
+	var fileID string
+	var filename string
+
+	if update.Message.Photo != nil {
+		// Menangani foto
+		fileID = update.Message.Photo[len(update.Message.Photo)-1].FileID
+		filename = generateFileName("jpg")
+
+		downloadAndSaveFile(ctx, b, fileID, filename, app.Token)
+
+		no_tiket, nowa := teleGetTiketOnChat(app.Db, emp)
+		var insert payload.TeleInsertChat
+		insert.NoTiket = no_tiket
+		insert.Dari = emp
+		insert.Pesan = caption
+		insert.Attch = filename
+		insert.Kepada = nowa
+		teleSimpanChatOn(app.Db, insert)
+		fmt.Println(no_tiket + " " + emp + " " + update.Message.Text)
+		wa.KirimdariTeleHandlerSendImage(ctx, app.ClientWA, nowa, filename, caption)
+
+	} else if update.Message.Document != nil {
+		// Menangani dokumen
+		fileID = update.Message.Document.FileID
+		filename = generateFileName("pdf")
+		downloadAndSaveFile(ctx, b, fileID, filename, app.Token)
+
+		no_tiket, nowa := teleGetTiketOnChat(app.Db, emp)
+		var insert payload.TeleInsertChat
+		insert.NoTiket = no_tiket
+		insert.Dari = emp
+		insert.Pesan = caption
+		insert.Attch = filename
+		insert.Kepada = nowa
+		teleSimpanChatOn(app.Db, insert)
+		fmt.Println(no_tiket + " " + emp + " " + update.Message.Text)
+		wa.KirimdariTeleHandlersendPDF(ctx, app.ClientWA, nowa, filename, caption)
+
+	} else {
+		no_tiket, nowa := teleGetTiketOnChat(app.Db, emp)
+		var insert payload.TeleInsertChat
+		insert.NoTiket = no_tiket
+		insert.Dari = emp
+		insert.Pesan = update.Message.Text
+		insert.Attch = ""
+		insert.Kepada = nowa
+		teleSimpanChatOn(app.Db, insert)
+		fmt.Println(no_tiket + " " + emp + " " + update.Message.Text)
+		wa.KirimdariTeleHandler(ctx, b, app.ClientWA, update.Message.Text, nowa)
+	}
+
 }
 
 func (app *InitTele) grab_tiket(ctx context.Context, b *bot.Bot, update *models.Update, tiket string) {

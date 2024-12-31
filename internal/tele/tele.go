@@ -14,6 +14,7 @@ type InitTele struct {
 	Db       *sql.DB
 	Chatid   int64
 	Userid   int64
+	Token    string
 }
 
 func Mulai(ctx context.Context, db *sql.DB, b *bot.Bot, client *whatsmeow.Client, telex InitTele) error {
